@@ -1,0 +1,414 @@
+```.htaccess
+RewriteEngine On 
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)$ index.php?param=$1 [QSA,L]
+```
+
+```banco.sql
+CREATE TABLE [...]
+```
+
+```index.php
+<?php
+
+use generic\Controller;
+
+include_once "generic/AutoLoad.php";
+
+
+if(isset($_GET['param'])){
+    $controller = new Controller();
+
+    $controller->verificarCaminho($_GET['param']);
+
+}
+```
+
+```README.md
+# mvc20242
+mvc20242
+
+```
+
+```controller\ClienteController.php
+<?php
+namespace controller;
+
+use service\ClienteService;
+use view\ClienteView;
+
+class ClienteController{
+
+    public function listarClientes(){
+        $clienteServ = new ClienteService();
+        $retorno = $clienteServ->listaClientes();
+        $clienteView = new ClienteView();
+        $clienteView->listaClientes($retorno);
+    }
+
+    public function alterarCliente(){
+        $clienteServ = new ClienteService();
+        
+        $retorno=$clienteServ->buscarDados();
+        
+        $clienteView = new ClienteView();
+        $clienteView->alterarClientes($retorno);
+    }
+
+    public function salvarAlterarCliente(){
+        $clienteServ = new ClienteService();
+        $clienteServ->salvarAlterar();
+        $this->listarClientes();
+    }
+}
+?>
+```
+
+```dao\interface\IClienteDAO.php
+<?php
+namespace dao\interface;
+interface IClienteDAO{
+    public function listar();
+    public function alterar($id,$nome);
+    public function dados($id);
+}
+```
+
+```dao\interface\IProfessorDAO.php
+<?php
+namespace dao\interface;
+interface IProfessorDAO{
+    public function listar();
+}
+```
+
+```dao\mysql\ClienteDAO.php
+<?php
+namespace dao\mysql;
+
+use dao\interface\IClienteDAO;
+use generic\MysqlFactory;
+
+class ClienteDAO extends MysqlFactory implements IClienteDAO{
+
+    public function listar(){
+       
+        $sql="select id, nome from clientes";
+       $retorno= $this->banco->executar($sql);
+       return $retorno;
+    }
+    public function alterar($id,$nome){
+        $sql = "update clientes set nome=:nome where id=:id";
+        $param=[
+            "id" =>$id,
+            "nome" =>$nome
+        ];
+        $this->banco->executar($sql,$param);
+    }
+    public function dados($id){
+        $sql = "select id, nome from clientes where id=:id";
+        $param=[
+            "id" =>$id
+          
+        ];
+        return $this->banco->executar($sql,$param);
+    }
+}
+
+?>
+```
+
+```generic\Acao.php
+<?php
+namespace generic;
+class Acao{
+    private $classe;
+    private $metodo;
+    
+    public function __construct($classe,$metodo){
+        $this->classe=$classe;
+        $this->metodo = $metodo;
+    }
+
+    public function executar(){
+        $obj = new $this->classe();
+        $obj->{$this->metodo}();
+    }
+
+
+}
+
+?>
+```
+
+```generic\AutoLoad.php
+<?php
+spl_autoload_register(function ($class){
+   
+    include $class.".php";
+});
+```
+
+```generic\Controller.php
+<?php
+namespace generic;
+
+class Controller{
+   
+    private $arrChamadas=[];
+    
+    public function __construct(){
+        $this->arrChamadas = [
+            "cliente/lista" => new Acao("controller\ClienteController","listarClientes"),
+            "cliente/alterar" => new Acao("controller\ClienteController","alterarCliente"),
+            "cliente/salvarAlterar" => new Acao("controller\ClienteController","salvarAlterarCliente"),
+        ];
+    }
+
+   
+    public function verificarCaminho($rota){
+        if(isset($this->arrChamadas[$rota])){
+             $this->arrChamadas[$rota]->executar();
+             return;
+        }
+
+            echo "Rota não existe!";
+        
+
+        
+    }
+
+
+
+
+}
+```
+
+```generic\MysqlFactory.php
+<?php
+namespace generic;
+
+class MysqlFactory{
+    public ?MysqlSingleton $banco;
+
+    public function __construct()
+    {
+
+        $this->banco = MysqlSingleton::getInstance();
+      
+    }
+}
+?>
+```
+
+```generic\MysqlSingleton.php
+<?php
+
+namespace generic;
+
+use PDO;
+
+class MysqlSingleton
+{
+    private static $instance = null;
+
+    private $conexaoPDO = null;
+    private $dsn = "mysql:host=localhost;dbname=aluguel";
+    private $username = "root";
+    private $password = "";
+
+    private function __construct()
+    {
+
+
+
+        if ($this->conexaoPDO == null) {
+
+            $this->conexaoPDO = new PDO($this->dsn, $this->username, $this->password);
+            $this->conexaoPDO->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        }
+    }
+    public static function getInstance()
+    {
+
+        if (self::$instance == null) {
+            self::$instance = new MysqlSingleton();
+        }
+        
+        return self::$instance;
+    }
+
+    public function executar($sql, $param = array())
+    {
+        if ($this->conexaoPDO != null) {
+            $sth = $this->conexaoPDO->prepare($sql);
+            foreach ($param as $key => &$value) {
+                $sth->bindParam($key, $value, PDO::PARAM_STR);
+            }
+            $sth->execute();
+            return $sth->fetchAll(PDO::FETCH_ASSOC);
+        }
+    }
+}
+
+```
+
+```generic\View.php
+<?php
+namespace generic;
+
+use template\ITemplate;
+
+class View {
+    private ITemplate $template;    
+    public function __construct($template)
+    {
+        $this->template=$template;
+    }
+    public function conteudo($caminho,$param = null){
+        echo $this->template->cabecalho();
+        include $caminho;
+        echo $this->template->rodape();
+    }
+}
+?>
+```
+
+```public\AlterarCliente.php
+<form action="/mvc20242/cliente/salvarAlterar" method="POST">
+    <input type="hidden" name="id" value="<?= $param["id"]?>" />
+    <label>Nome:</label></br>
+    <input type="text" name="nome" value="<?= $param["nome"] ?>" />
+    </br>
+    <input type="submit" value="Enviar" />
+</form>
+```
+
+```public\ListaCliente.php
+
+        <h2>Clientes</h2>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Alterar</th>
+            </tr>
+           <?
+           foreach ($param as $valor){
+            ?>
+            <tr>
+                <td><?= $valor["id"] ?></td>
+                <td><?= $valor["nome"]?></td>
+                <td><a href="/mvc20242/cliente/alterar?id=<?= $valor["id"]?>">Aterar</a></td>
+            </tr>
+            <?
+           }
+           ?>
+        </table>
+     
+
+
+```
+
+```public\NaoExiste.php
+<html>
+    <body>
+        Rota não existe!
+    </body>
+</html>
+```
+
+```service\ClienteService.php
+<?
+namespace service;
+
+use dao\mysql\ClienteDAO;
+
+class ClienteService extends ClienteDAO{
+    public function listaClientes(){
+        return parent::listar();
+    }
+    public function buscarDados(){
+        if(isset($_GET["id"])){
+            $linha = parent::dados($_GET["id"]);
+            if($linha){
+               
+                return $linha[0];
+            }
+        }
+
+        return false;
+        
+    }
+
+    public function salvarAlterar(){
+        if(isset($_POST["id"])){
+            $this->alterarCliente($_POST["id"],$_POST["nome"]);
+        }
+    }
+
+    private function alterarCliente($id,$nome){
+        parent::alterar($id,$nome);
+    }
+}
+```
+
+```template\ITemplate.php
+<?php
+namespace template;
+interface ITemplate {
+    public function cabecalho();
+    public function rodape();
+
+ 
+}
+?>
+```
+
+```template\UsuarioTemp.php
+<?php
+namespace template;
+
+class UsuarioTemp implements ITemplate {
+    public function cabecalho(){
+        echo "<div> usuario cabecalho</div>";
+    }
+    public function rodape(){
+        echo "<div> usuario rodape</div>";
+    }
+
+    
+}
+?>
+```
+
+```view\ClienteView.php
+<?php
+
+namespace view;
+
+use generic\View;
+use template\UsuarioTemp;
+
+class ClienteView extends View
+{
+    public function __construct()
+    {
+        parent::__construct(new UsuarioTemp());
+    }
+    public function listaClientes($dados)
+    {
+        
+        $this->conteudo("public/ListaCliente.php",$dados);
+    }
+
+    public function alterarClientes($dados)
+    {
+        
+        $this->conteudo("public/AlterarCliente.php",$dados);
+    }
+}
+
+```
+
