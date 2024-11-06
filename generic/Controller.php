@@ -9,23 +9,6 @@ class Controller{
     
     public function __construct(){
         $this->arrChamadas = [
-            // Clientes (Existente)
-            "cliente/lista" => [
-                "controller\ClienteController",
-                "listarClientes",
-                ["GET"]
-            ],
-            "cliente/alterar" => [
-                "controller\ClienteController",
-                "alterarCliente",
-                ["GET"]
-            ],
-            "cliente/salvarAlterar" => [
-                "controller\ClienteController",
-                "salvarAlterarCliente",
-                ["POST"]
-            ],
-            
             // Desafios (Novo)
             "desafios/listar" => [
                 "controller\DesafiosController",
@@ -115,13 +98,21 @@ class Controller{
 
     private function getParams(ReflectionMethod $method){
         $params = [];
+        $inputData = [];
+    
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $contentType = $_SERVER["CONTENT_TYPE"] ?? '';
+            if (stripos($contentType, 'application/json') !== false) {
+                $rawInput = file_get_contents("php://input");
+                $inputData = json_decode($rawInput, true) ?? [];
+            } else {
+                $inputData = $_POST;
+            }
+        }
+    
         foreach($method->getParameters() as $param){
             $name = $param->getName();
-            $params[] = match($_SERVER['REQUEST_METHOD']) {
-                'GET' => $_GET[$name] ?? null,
-                'POST' => $_POST[$name] ?? null,
-                default => null,
-            };
+            $params[] = $inputData[$name] ?? null;
         }
         return $params;
     }

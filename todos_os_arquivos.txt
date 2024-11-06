@@ -6,7 +6,37 @@ RewriteRule ^(.+)$ index.php?param=$1 [QSA,L]
 ```
 
 ```banco.sql
-CREATE TABLE [...]
+-- banco.sql
+
+CREATE TABLE Usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Desafios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    data_inicio DATE NOT NULL,
+    data_fim DATE NOT NULL,
+    criado_por INT,
+    FOREIGN KEY (criado_por) REFERENCES Usuarios(id) ON DELETE SET NULL,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Progresso (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    desafio_id INT NOT NULL,
+    progresso INT DEFAULT 0,
+    data_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES Usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (desafio_id) REFERENCES Desafios(id) ON DELETE CASCADE
+);
+
 ```
 
 ```index.php
@@ -31,92 +61,273 @@ mvc20242
 
 ```
 
-```controller\ClienteController.php
+```controller\DesafiosController.php
 <?php
 namespace controller;
 
-use service\ClienteService;
-use view\ClienteView;
+use service\DesafioService;
 
-class ClienteController{
+class DesafiosController {
 
-    public function listarClientes(){
-        $clienteServ = new ClienteService();
-        $retorno = $clienteServ->listaClientes();
-        $clienteView = new ClienteView();
-        $clienteView->listaClientes($retorno);
+    private $desafioService;
+
+    public function __construct(){
+        $this->desafioService = new DesafioService();
     }
 
-    public function alterarCliente(){
-        $clienteServ = new ClienteService();
-        
-        $retorno=$clienteServ->buscarDados();
-        
-        $clienteView = new ClienteView();
-        $clienteView->alterarClientes($retorno);
+    // GET /desafios/listar
+    public function listarDesafios(){
+        $desafios = $this->desafioService->listarDesafios();
+        echo json_encode($desafios);
     }
 
-    public function salvarAlterarCliente(){
-        $clienteServ = new ClienteService();
-        $clienteServ->salvarAlterar();
-        $this->listarClientes();
+    // POST /desafios/criar
+    public function criarDesafio($titulo, $descricao, $data_inicio, $data_fim, $criado_por){
+        $resultado = $this->desafioService->criarDesafio($titulo, $descricao, $data_inicio, $data_fim, $criado_por);
+        echo json_encode($resultado);
+    }
+
+    // POST /desafios/participar
+    public function participarDesafio($usuario_id, $desafio_id){
+        $resultado = $this->desafioService->participarDesafio($usuario_id, $desafio_id);
+        echo json_encode($resultado);
+    }
+
+    // POST /desafios/progresso
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
+        $resultado = $this->desafioService->registrarProgresso($usuario_id, $desafio_id, $progresso);
+        echo json_encode($resultado);
     }
 }
 ?>
+
 ```
 
-```dao\interface\IClienteDAO.php
+```controller\ProgressosController.php
+<?php
+namespace controller;
+
+use service\ProgressoService;
+
+class ProgressosController {
+
+    private $progressoService;
+
+    public function __construct(){
+        $this->progressoService = new ProgressoService();
+    }
+
+    // GET /progresso/listar
+    public function listarProgresso(){
+        $progresso = $this->progressoService->listarProgresso();
+        echo json_encode($progresso);
+    }
+
+    // POST /progresso/registrar
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
+        $resultado = $this->progressoService->registrarProgresso($usuario_id, $desafio_id, $progresso);
+        echo json_encode($resultado);
+    }
+}
+?>
+
+```
+
+```controller\UsuariosController.php
+<?php
+namespace controller;
+
+use service\UsuarioService;
+
+class UsuariosController {
+
+    private $usuarioService;
+
+    public function __construct(){
+        $this->usuarioService = new UsuarioService();
+    }
+
+    // GET /usuarios/listar
+    public function listarUsuarios(){
+        $usuarios = $this->usuarioService->listarUsuarios();
+        echo json_encode($usuarios);
+    }
+
+    // POST /usuarios/criar
+    public function criarUsuario($nome, $email, $senha){
+        var_dump($nome);
+        $resultado = $this->usuarioService->criarUsuario($nome, $email, $senha);
+        echo json_encode($resultado);
+    }
+
+    // POST /usuarios/login
+    public function login($email, $senha){
+        $resultado = $this->usuarioService->login($email, $senha);
+        echo json_encode($resultado);
+    }
+}
+?>
+
+```
+
+```dao\interface\IDesafioDAO.php
 <?php
 namespace dao\interface;
-interface IClienteDAO{
+
+interface IDesafioDAO{
     public function listar();
-    public function alterar($id,$nome);
-    public function dados($id);
+    public function criar($titulo, $descricao, $data_inicio, $data_fim, $criado_por);
+    public function participar($usuario_id, $desafio_id);
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso);
 }
+?>
+
 ```
 
-```dao\interface\IProfessorDAO.php
+```dao\interface\IProgressoDAO.php
 <?php
 namespace dao\interface;
-interface IProfessorDAO{
+
+interface IProgressoDAO{
     public function listar();
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso);
 }
+?>
+
 ```
 
-```dao\mysql\ClienteDAO.php
+```dao\interface\IUsuarioDAO.php
+<?php
+namespace dao\interface;
+
+interface IUsuarioDAO{
+    public function listar();
+    public function criar($nome, $email, $senha);
+    public function login($email, $senha);
+}
+?>
+
+```
+
+```dao\mysql\DesafioDAO.php
 <?php
 namespace dao\mysql;
 
-use dao\interface\IClienteDAO;
+use dao\interface\IDesafioDAO;
 use generic\MysqlFactory;
 
-class ClienteDAO extends MysqlFactory implements IClienteDAO{
+class DesafioDAO extends MysqlFactory implements IDesafioDAO{
 
     public function listar(){
-       
-        $sql="select id, nome from clientes";
-       $retorno= $this->banco->executar($sql);
-       return $retorno;
+        $sql = "SELECT * FROM Desafios";
+        return $this->banco->executar($sql);
     }
-    public function alterar($id,$nome){
-        $sql = "update clientes set nome=:nome where id=:id";
-        $param=[
-            "id" =>$id,
-            "nome" =>$nome
+
+    public function criar($titulo, $descricao, $data_inicio, $data_fim, $criado_por){
+        $sql = "INSERT INTO Desafios (titulo, descricao, data_inicio, data_fim, criado_por) VALUES (:titulo, :descricao, :data_inicio, :data_fim, :criado_por)";
+        $param = [
+            "titulo" => $titulo,
+            "descricao" => $descricao,
+            "data_inicio" => $data_inicio,
+            "data_fim" => $data_fim,
+            "criado_por" => $criado_por
         ];
-        $this->banco->executar($sql,$param);
+        $this->banco->executar($sql, $param);
+        return ["message" => "Desafio criado com sucesso"];
     }
-    public function dados($id){
-        $sql = "select id, nome from clientes where id=:id";
-        $param=[
-            "id" =>$id
-          
+
+    public function participar($usuario_id, $desafio_id){
+        $sql = "INSERT INTO Progresso (usuario_id, desafio_id) VALUES (:usuario_id, :desafio_id)";
+        $param = [
+            "usuario_id" => $usuario_id,
+            "desafio_id" => $desafio_id
         ];
-        return $this->banco->executar($sql,$param);
+        $this->banco->executar($sql, $param);
+        return ["message" => "Participação registrada com sucesso"];
+    }
+
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
+        $sql = "UPDATE Progresso SET progresso = :progresso, data_registro = CURRENT_TIMESTAMP WHERE usuario_id = :usuario_id AND desafio_id = :desafio_id";
+        $param = [
+            "progresso" => $progresso,
+            "usuario_id" => $usuario_id,
+            "desafio_id" => $desafio_id
+        ];
+        $this->banco->executar($sql, $param);
+        return ["message" => "Progresso atualizado com sucesso"];
     }
 }
-
 ?>
+
+```
+
+```dao\mysql\ProgressoDAO.php
+<?php
+namespace dao\mysql;
+
+use dao\interface\IProgressoDAO;
+use generic\MysqlFactory;
+
+class ProgressoDAO extends MysqlFactory implements IProgressoDAO{
+
+    public function listar(){
+        $sql = "SELECT * FROM Progresso";
+        return $this->banco->executar($sql);
+    }
+
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
+        $sql = "UPDATE Progresso SET progresso = :progresso, data_registro = CURRENT_TIMESTAMP WHERE usuario_id = :usuario_id AND desafio_id = :desafio_id";
+        $param = [
+            "progresso" => $progresso,
+            "usuario_id" => $usuario_id,
+            "desafio_id" => $desafio_id
+        ];
+        $this->banco->executar($sql, $param);
+        return ["message" => "Progresso registrado com sucesso"];
+    }
+}
+?>
+
+```
+
+```dao\mysql\UsuarioDAO.php
+<?php
+namespace dao\mysql;
+
+use dao\interface\IUsuarioDAO;
+use generic\MysqlFactory;
+
+class UsuarioDAO extends MysqlFactory implements IUsuarioDAO{
+
+    public function listar(){
+        $sql = "SELECT id, nome, email, criado_em FROM Usuarios";
+        return $this->banco->executar($sql);
+    }
+
+    public function criar($nome, $email, $senha){
+        $sql = "INSERT INTO Usuarios (nome, email, senha) VALUES (:nome, :email, :senha)";
+        $param = [
+            "nome" => $nome,
+            "email" => $email,
+            "senha" => password_hash($senha, PASSWORD_BCRYPT)
+        ];
+        $this->banco->executar($sql, $param);
+        return ["message" => "Usuário criado com sucesso"];
+    }
+
+    public function login($email, $senha){
+        $sql = "SELECT * FROM Usuarios WHERE email = :email";
+        $param = ["email" => $email];
+        $resultado = $this->banco->executar($sql, $param);
+        if(count($resultado) > 0 && password_verify($senha, $resultado[0]['senha'])){
+            // Aqui você pode implementar a geração de tokens ou sessões
+            return ["message" => "Login bem-sucedido", "usuario_id" => $resultado[0]['id']];
+        }
+        return ["error" => "Credenciais inválidas"];
+    }
+}
+?>
+
 ```
 
 ```generic\Acao.php
@@ -154,35 +365,133 @@ spl_autoload_register(function ($class){
 <?php
 namespace generic;
 
+use ReflectionMethod;
+
 class Controller{
    
     private $arrChamadas=[];
     
     public function __construct(){
         $this->arrChamadas = [
-            "cliente/lista" => new Acao("controller\ClienteController","listarClientes"),
-            "cliente/alterar" => new Acao("controller\ClienteController","alterarCliente"),
-            "cliente/salvarAlterar" => new Acao("controller\ClienteController","salvarAlterarCliente"),
+            // Clientes (Existente)
+            "cliente/lista" => [
+                "controller\ClienteController",
+                "listarClientes",
+                ["GET"]
+            ],
+            "cliente/alterar" => [
+                "controller\ClienteController",
+                "alterarCliente",
+                ["GET"]
+            ],
+            "cliente/salvarAlterar" => [
+                "controller\ClienteController",
+                "salvarAlterarCliente",
+                ["POST"]
+            ],
+            
+            // Desafios (Novo)
+            "desafios/listar" => [
+                "controller\DesafiosController",
+                "listarDesafios",
+                ["GET"]
+            ],
+            "desafios/criar" => [
+                "controller\DesafiosController",
+                "criarDesafio",
+                ["POST"]
+            ],
+            "desafios/participar" => [
+                "controller\DesafiosController",
+                "participarDesafio",
+                ["POST"]
+            ],
+            "desafios/progresso" => [
+                "controller\DesafiosController",
+                "registrarProgresso",
+                ["POST"]
+            ],
+            
+            // Usuários (Novo)
+            "usuarios/listar" => [
+                "controller\UsuariosController",
+                "listarUsuarios",
+                ["GET"]
+            ],
+            "usuarios/criar" => [
+                "controller\UsuariosController",
+                "criarUsuario",
+                ["POST"]
+            ],
+            "usuarios/login" => [
+                "controller\UsuariosController",
+                "login",
+                ["POST"]
+            ],
+            
+            // Progresso (Novo)
+            "progresso/listar" => [
+                "controller\ProgressosController",
+                "listarProgresso",
+                ["GET"]
+            ],
+            "progresso/registrar" => [
+                "controller\ProgressosController",
+                "registrarProgresso",
+                ["POST"]
+            ],
         ];
     }
 
-   
     public function verificarCaminho($rota){
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
+        
         if(isset($this->arrChamadas[$rota])){
-             $this->arrChamadas[$rota]->executar();
-             return;
+            list($controllerClass, $method, $allowedMethods) = $this->arrChamadas[$rota];
+            
+            if(!in_array($requestMethod, $allowedMethods)){
+                http_response_code(405);
+                echo json_encode(["error" => "Método não permitido"]);
+                return;
+            }
+
+            if(class_exists($controllerClass)){
+                $controller = new $controllerClass();
+                
+                if(method_exists($controller, $method)){
+                    $reflection = new ReflectionMethod($controller, $method);
+                    $params = $this->getParams($reflection);
+                    $reflection->invokeArgs($controller, $params);
+                    return;
+                }
+            }
+
+            // Caso a classe ou método não exista
+            http_response_code(404);
+            echo json_encode(["error" => "Endpoint não existe"]);
+            return;
         }
 
-            echo "Rota não existe!";
-        
-
-        
+        // Rota não encontrada
+        http_response_code(404);
+        echo json_encode(["error" => "Endpoint não existe"]);
     }
 
-
-
-
+    private function getParams(ReflectionMethod $method){
+        $params = [];
+        foreach($method->getParameters() as $param){
+            $name = $param->getName();
+            $params[] = match($_SERVER['REQUEST_METHOD']) {
+                'GET' => $_GET[$name] ?? null,
+                'POST' => $_POST[$name] ?? null,
+                default => null,
+            };
+        }
+        return $params;
+    }
 }
+?>
+
 ```
 
 ```generic\MysqlFactory.php
@@ -214,15 +523,12 @@ class MysqlSingleton
     private static $instance = null;
 
     private $conexaoPDO = null;
-    private $dsn = "mysql:host=localhost;dbname=aluguel";
+    private $dsn = "mysql:host=localhost;dbname=fitness";
     private $username = "root";
     private $password = "";
 
     private function __construct()
     {
-
-
-
         if ($this->conexaoPDO == null) {
 
             $this->conexaoPDO = new PDO($this->dsn, $this->username, $this->password);
@@ -319,39 +625,76 @@ class View {
 </html>
 ```
 
-```service\ClienteService.php
-<?
+```service\DesafioService.php
+<?php
 namespace service;
 
-use dao\mysql\ClienteDAO;
+use dao\mysql\DesafioDAO;
 
-class ClienteService extends ClienteDAO{
-    public function listaClientes(){
+class DesafioService extends DesafioDAO{
+
+    public function listarDesafios(){
         return parent::listar();
     }
-    public function buscarDados(){
-        if(isset($_GET["id"])){
-            $linha = parent::dados($_GET["id"]);
-            if($linha){
-               
-                return $linha[0];
-            }
-        }
 
-        return false;
-        
+    public function criarDesafio($titulo, $descricao, $data_inicio, $data_fim, $criado_por){
+        return parent::criar($titulo, $descricao, $data_inicio, $data_fim, $criado_por);
     }
 
-    public function salvarAlterar(){
-        if(isset($_POST["id"])){
-            $this->alterarCliente($_POST["id"],$_POST["nome"]);
-        }
+    public function participarDesafio($usuario_id, $desafio_id){
+        return parent::participar($usuario_id, $desafio_id);
     }
 
-    private function alterarCliente($id,$nome){
-        parent::alterar($id,$nome);
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
+        return parent::registrarProgresso($usuario_id, $desafio_id, $progresso);
     }
 }
+?>
+
+```
+
+```service\ProgressoService.php
+<?php
+namespace service;
+
+use dao\mysql\ProgressoDAO;
+
+class ProgressoService extends ProgressoDAO{
+
+    public function listarProgresso(){
+        return parent::listar();
+    }
+
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
+        return parent::registrarProgresso($usuario_id, $desafio_id, $progresso);
+    }
+}
+?>
+
+```
+
+```service\UsuarioService.php
+<?php
+namespace service;
+
+use dao\mysql\UsuarioDAO;
+
+class UsuarioService extends UsuarioDAO{
+
+    public function listarUsuarios(){
+        return parent::listar();
+    }
+
+    public function criarUsuario($nome, $email, $senha){
+        return parent::criar($nome, $email, $senha);
+    }
+
+    public function login($email, $senha){
+        return parent::login($email, $senha);
+    }
+}
+?>
+
 ```
 
 ```template\ITemplate.php

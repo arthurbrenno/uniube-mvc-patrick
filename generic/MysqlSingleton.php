@@ -9,15 +9,12 @@ class MysqlSingleton
     private static $instance = null;
 
     private $conexaoPDO = null;
-    private $dsn = "mysql:host=localhost;dbname=aluguel";
+    private $dsn = "mysql:host=localhost;dbname=fitness";
     private $username = "root";
     private $password = "";
 
     private function __construct()
     {
-
-
-
         if ($this->conexaoPDO == null) {
 
             $this->conexaoPDO = new PDO($this->dsn, $this->username, $this->password);
