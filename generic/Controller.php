@@ -102,7 +102,7 @@ class Controller{
     
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $contentType = $_SERVER["CONTENT_TYPE"] ?? '';
-            if (stripos($contentType, 'application/json') !== false) {
+            if (stripos($contentType, 'application/json') !== false) { // ou str_contains mesmo
                 $rawInput = file_get_contents("php://input");
                 $inputData = json_decode($rawInput, true) ?? [];
             } else {
