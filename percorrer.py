@@ -46,7 +46,8 @@ PADROES_IGNORAR = [
     '*.egg-info',
     '*.eggs',
     NOME_ARQUIVO_SAIDA,    # Arquivo de saída gerado pelo script
-    "percorrer.py"
+    "percorrer.py",
+    ".mypy_cache"
 ]
 
 def carregar_gitignore(diretorio_inicial='.'):

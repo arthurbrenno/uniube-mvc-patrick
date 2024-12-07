@@ -1,8 +1,23 @@
-```.htaccess
-RewriteEngine On 
-RewriteCond %{REQUEST_FILENAME} !-f 
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.+)$ index.php?param=$1 [QSA,L]
+```index.php
+<?php
+
+use generic\Controller;
+
+include_once "generic/AutoLoad.php";
+
+
+if(isset($_GET['param'])){
+    $controller = new Controller();
+
+    $controller->verificarCaminho($_GET['param']);
+
+}
+```
+
+```README.md
+# mvc20242
+mvc20242
+
 ```
 
 ```banco.sql
@@ -39,138 +54,39 @@ CREATE TABLE Progresso (
 
 ```
 
-```index.php
-<?php
-
-use generic\Controller;
-
-include_once "generic/AutoLoad.php";
-
-
-if(isset($_GET['param'])){
-    $controller = new Controller();
-
-    $controller->verificarCaminho($_GET['param']);
-
-}
+```.htaccess
+RewriteEngine On 
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)$ index.php?param=$1 [QSA,L]
 ```
 
-```README.md
-# mvc20242
-mvc20242
-
-```
-
-```controller\DesafiosController.php
+```dao/interface/IProgressoDAO.php
 <?php
-namespace controller;
+namespace dao\interface;
 
-use service\DesafioService;
-
-class DesafiosController {
-
-    private $desafioService;
-
-    public function __construct(){
-        $this->desafioService = new DesafioService();
-    }
-
-    // GET /desafios/listar
-    public function listarDesafios(){
-        $desafios = $this->desafioService->listarDesafios();
-        echo json_encode($desafios);
-    }
-
-    // POST /desafios/criar
-    public function criarDesafio($titulo, $descricao, $data_inicio, $data_fim, $criado_por){
-        $resultado = $this->desafioService->criarDesafio($titulo, $descricao, $data_inicio, $data_fim, $criado_por);
-        echo json_encode($resultado);
-    }
-
-    // POST /desafios/participar
-    public function participarDesafio($usuario_id, $desafio_id){
-        $resultado = $this->desafioService->participarDesafio($usuario_id, $desafio_id);
-        echo json_encode($resultado);
-    }
-
-    // POST /desafios/progresso
-    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
-        $resultado = $this->desafioService->registrarProgresso($usuario_id, $desafio_id, $progresso);
-        echo json_encode($resultado);
-    }
+interface IProgressoDAO{
+    public function listar();
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso);
 }
 ?>
 
 ```
 
-```controller\ProgressosController.php
+```dao/interface/IUsuarioDAO.php
 <?php
-namespace controller;
+namespace dao\interface;
 
-use service\ProgressoService;
-
-class ProgressosController {
-
-    private $progressoService;
-
-    public function __construct(){
-        $this->progressoService = new ProgressoService();
-    }
-
-    // GET /progresso/listar
-    public function listarProgresso(){
-        $progresso = $this->progressoService->listarProgresso();
-        echo json_encode($progresso);
-    }
-
-    // POST /progresso/registrar
-    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
-        $resultado = $this->progressoService->registrarProgresso($usuario_id, $desafio_id, $progresso);
-        echo json_encode($resultado);
-    }
+interface IUsuarioDAO{
+    public function listar();
+    public function criar($nome, $email, $senha);
+    public function login($email, $senha);
 }
 ?>
 
 ```
 
-```controller\UsuariosController.php
-<?php
-namespace controller;
-
-use service\UsuarioService;
-
-class UsuariosController {
-
-    private $usuarioService;
-
-    public function __construct(){
-        $this->usuarioService = new UsuarioService();
-    }
-
-    // GET /usuarios/listar
-    public function listarUsuarios(){
-        $usuarios = $this->usuarioService->listarUsuarios();
-        echo json_encode($usuarios);
-    }
-
-    // POST /usuarios/criar
-    public function criarUsuario($nome, $email, $senha){
-        var_dump($nome);
-        $resultado = $this->usuarioService->criarUsuario($nome, $email, $senha);
-        echo json_encode($resultado);
-    }
-
-    // POST /usuarios/login
-    public function login($email, $senha){
-        $resultado = $this->usuarioService->login($email, $senha);
-        echo json_encode($resultado);
-    }
-}
-?>
-
-```
-
-```dao\interface\IDesafioDAO.php
+```dao/interface/IDesafioDAO.php
 <?php
 namespace dao\interface;
 
@@ -184,32 +100,7 @@ interface IDesafioDAO{
 
 ```
 
-```dao\interface\IProgressoDAO.php
-<?php
-namespace dao\interface;
-
-interface IProgressoDAO{
-    public function listar();
-    public function registrarProgresso($usuario_id, $desafio_id, $progresso);
-}
-?>
-
-```
-
-```dao\interface\IUsuarioDAO.php
-<?php
-namespace dao\interface;
-
-interface IUsuarioDAO{
-    public function listar();
-    public function criar($nome, $email, $senha);
-    public function login($email, $senha);
-}
-?>
-
-```
-
-```dao\mysql\DesafioDAO.php
+```dao/mysql/DesafioDAO.php
 <?php
 namespace dao\mysql;
 
@@ -261,7 +152,7 @@ class DesafioDAO extends MysqlFactory implements IDesafioDAO{
 
 ```
 
-```dao\mysql\ProgressoDAO.php
+```dao/mysql/ProgressoDAO.php
 <?php
 namespace dao\mysql;
 
@@ -290,7 +181,7 @@ class ProgressoDAO extends MysqlFactory implements IProgressoDAO{
 
 ```
 
-```dao\mysql\UsuarioDAO.php
+```dao/mysql/UsuarioDAO.php
 <?php
 namespace dao\mysql;
 
@@ -330,30 +221,217 @@ class UsuarioDAO extends MysqlFactory implements IUsuarioDAO{
 
 ```
 
-```generic\Acao.php
+```template/ITemplate.php
 <?php
-namespace generic;
-class Acao{
-    private $classe;
-    private $metodo;
-    
-    public function __construct($classe,$metodo){
-        $this->classe=$classe;
-        $this->metodo = $metodo;
-    }
+namespace template;
+interface ITemplate {
+    public function cabecalho();
+    public function rodape();
 
-    public function executar(){
-        $obj = new $this->classe();
-        $obj->{$this->metodo}();
-    }
-
-
+ 
 }
-
 ?>
 ```
 
-```generic\AutoLoad.php
+```template/UsuarioTemp.php
+<?php
+namespace template;
+
+class UsuarioTemp implements ITemplate {
+    public function cabecalho(){
+        echo "<div> usuario cabecalho</div>";
+    }
+    public function rodape(){
+        echo "<div> usuario rodape</div>";
+    }
+
+    
+}
+?>
+```
+
+```controller/UsuariosController.php
+<?php
+namespace controller;
+
+use service\UsuarioService;
+
+class UsuariosController {
+
+    private $usuarioService;
+
+    public function __construct(){
+        $this->usuarioService = new UsuarioService();
+    }
+
+    // GET /usuarios/listar
+    public function listarUsuarios(){
+        $usuarios = $this->usuarioService->listarUsuarios();
+        echo json_encode($usuarios);
+    }
+
+    // POST /usuarios/criar
+    public function criarUsuario($nome, $email, $senha){
+        $resultado = $this->usuarioService->criarUsuario($nome, $email, $senha);
+        echo json_encode($resultado);
+    }
+
+    // POST /usuarios/login
+    public function login($email, $senha){
+        $resultado = $this->usuarioService->login($email, $senha);
+        echo json_encode($resultado);
+    }
+}
+?>
+
+```
+
+```controller/DesafiosController.php
+<?php
+namespace controller;
+
+use service\DesafioService;
+
+class DesafiosController {
+
+    private $desafioService;
+
+    public function __construct(){
+        $this->desafioService = new DesafioService();
+    }
+
+    // GET /desafios/listar
+    public function listarDesafios(){
+        $desafios = $this->desafioService->listarDesafios();
+        echo json_encode($desafios);
+    }
+
+    // POST /desafios/criar
+    public function criarDesafio($titulo, $descricao, $data_inicio, $data_fim, $criado_por){
+        $resultado = $this->desafioService->criarDesafio($titulo, $descricao, $data_inicio, $data_fim, $criado_por);
+        echo json_encode($resultado);
+    }
+
+    // POST /desafios/participar
+    public function participarDesafio($usuario_id, $desafio_id){
+        $resultado = $this->desafioService->participarDesafio($usuario_id, $desafio_id);
+        echo json_encode($resultado);
+    }
+
+    // POST /desafios/progresso
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
+        $resultado = $this->desafioService->registrarProgresso($usuario_id, $desafio_id, $progresso);
+        echo json_encode($resultado);
+    }
+}
+?>
+
+```
+
+```controller/ProgressosController.php
+<?php
+namespace controller;
+
+use service\ProgressoService;
+
+class ProgressosController {
+
+    private $progressoService;
+
+    public function __construct(){
+        $this->progressoService = new ProgressoService();
+    }
+
+    // GET /progresso/listar
+    public function listarProgresso(){
+        $progresso = $this->progressoService->listarProgresso();
+        echo json_encode($progresso);
+    }
+
+    // POST /progresso/registrar
+    public function registrarProgresso($usuario_id, $desafio_id, $progresso){
+        $resultado = $this->progressoService->registrarProgresso($usuario_id, $desafio_id, $progresso);
+        echo json_encode($resultado);
+    }
+}
+?>
+
+```
+
+```public/NaoExiste.php
+<html>
+    <body>
+        Rota não existe!
+    </body>
+</html>
+```
+
+```public/AlterarCliente.php
+<form action="/mvc20242/cliente/salvarAlterar" method="POST">
+    <input type="hidden" name="id" value="<?= $param["id"]?>" />
+    <label>Nome:</label></br>
+    <input type="text" name="nome" value="<?= $param["nome"] ?>" />
+    </br>
+    <input type="submit" value="Enviar" />
+</form>
+```
+
+```public/ListaCliente.php
+
+        <h2>Clientes</h2>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Alterar</th>
+            </tr>
+           <?
+           foreach ($param as $valor){
+            ?>
+            <tr>
+                <td><?= $valor["id"] ?></td>
+                <td><?= $valor["nome"]?></td>
+                <td><a href="/mvc20242/cliente/alterar?id=<?= $valor["id"]?>">Aterar</a></td>
+            </tr>
+            <?
+           }
+           ?>
+        </table>
+     
+
+
+```
+
+```view/ClienteView.php
+<?php
+
+namespace view;
+
+use generic\View;
+use template\UsuarioTemp;
+
+class ClienteView extends View
+{
+    public function __construct()
+    {
+        parent::__construct(new UsuarioTemp());
+    }
+    public function listaClientes($dados)
+    {
+        
+        $this->conteudo("public/ListaCliente.php",$dados);
+    }
+
+    public function alterarClientes($dados)
+    {
+        
+        $this->conteudo("public/AlterarCliente.php",$dados);
+    }
+}
+
+```
+
+```generic/AutoLoad.php
 <?php
 spl_autoload_register(function ($class){
    
@@ -361,7 +439,7 @@ spl_autoload_register(function ($class){
 });
 ```
 
-```generic\Controller.php
+```generic/Controller.php
 <?php
 namespace generic;
 
@@ -373,23 +451,6 @@ class Controller{
     
     public function __construct(){
         $this->arrChamadas = [
-            // Clientes (Existente)
-            "cliente/lista" => [
-                "controller\ClienteController",
-                "listarClientes",
-                ["GET"]
-            ],
-            "cliente/alterar" => [
-                "controller\ClienteController",
-                "alterarCliente",
-                ["GET"]
-            ],
-            "cliente/salvarAlterar" => [
-                "controller\ClienteController",
-                "salvarAlterarCliente",
-                ["POST"]
-            ],
-            
             // Desafios (Novo)
             "desafios/listar" => [
                 "controller\DesafiosController",
@@ -479,13 +540,21 @@ class Controller{
 
     private function getParams(ReflectionMethod $method){
         $params = [];
+        $inputData = [];
+    
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $contentType = $_SERVER["CONTENT_TYPE"] ?? '';
+            if (stripos($contentType, 'application/json') !== false) { // ou str_contains mesmo
+                $rawInput = file_get_contents("php://input");
+                $inputData = json_decode($rawInput, true) ?? [];
+            } else {
+                $inputData = $_POST;
+            }
+        }
+    
         foreach($method->getParameters() as $param){
             $name = $param->getName();
-            $params[] = match($_SERVER['REQUEST_METHOD']) {
-                'GET' => $_GET[$name] ?? null,
-                'POST' => $_POST[$name] ?? null,
-                default => null,
-            };
+            $params[] = $inputData[$name] ?? null;
         }
         return $params;
     }
@@ -494,24 +563,51 @@ class Controller{
 
 ```
 
-```generic\MysqlFactory.php
+```generic/View.php
 <?php
 namespace generic;
 
-class MysqlFactory{
-    public ?MysqlSingleton $banco;
+use template\ITemplate;
 
-    public function __construct()
+class View {
+    private ITemplate $template;    
+    public function __construct($template)
     {
-
-        $this->banco = MysqlSingleton::getInstance();
-      
+        $this->template=$template;
+    }
+    public function conteudo($caminho,$param = null){
+        echo $this->template->cabecalho();
+        include $caminho;
+        echo $this->template->rodape();
     }
 }
 ?>
 ```
 
-```generic\MysqlSingleton.php
+```generic/Acao.php
+<?php
+namespace generic;
+class Acao{
+    private $classe;
+    private $metodo;
+    
+    public function __construct($classe,$metodo){
+        $this->classe=$classe;
+        $this->metodo = $metodo;
+    }
+
+    public function executar(){
+        $obj = new $this->classe();
+        $obj->{$this->metodo}();
+    }
+
+
+}
+
+?>
+```
+
+```generic/MysqlSingleton.php
 <?php
 
 namespace generic;
@@ -560,72 +656,24 @@ class MysqlSingleton
 
 ```
 
-```generic\View.php
+```generic/MysqlFactory.php
 <?php
 namespace generic;
 
-use template\ITemplate;
+class MysqlFactory{
+    public ?MysqlSingleton $banco;
 
-class View {
-    private ITemplate $template;    
-    public function __construct($template)
+    public function __construct()
     {
-        $this->template=$template;
-    }
-    public function conteudo($caminho,$param = null){
-        echo $this->template->cabecalho();
-        include $caminho;
-        echo $this->template->rodape();
+
+        $this->banco = MysqlSingleton::getInstance();
+      
     }
 }
 ?>
 ```
 
-```public\AlterarCliente.php
-<form action="/mvc20242/cliente/salvarAlterar" method="POST">
-    <input type="hidden" name="id" value="<?= $param["id"]?>" />
-    <label>Nome:</label></br>
-    <input type="text" name="nome" value="<?= $param["nome"] ?>" />
-    </br>
-    <input type="submit" value="Enviar" />
-</form>
-```
-
-```public\ListaCliente.php
-
-        <h2>Clientes</h2>
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Alterar</th>
-            </tr>
-           <?
-           foreach ($param as $valor){
-            ?>
-            <tr>
-                <td><?= $valor["id"] ?></td>
-                <td><?= $valor["nome"]?></td>
-                <td><a href="/mvc20242/cliente/alterar?id=<?= $valor["id"]?>">Aterar</a></td>
-            </tr>
-            <?
-           }
-           ?>
-        </table>
-     
-
-
-```
-
-```public\NaoExiste.php
-<html>
-    <body>
-        Rota não existe!
-    </body>
-</html>
-```
-
-```service\DesafioService.php
+```service/DesafioService.php
 <?php
 namespace service;
 
@@ -653,7 +701,7 @@ class DesafioService extends DesafioDAO{
 
 ```
 
-```service\ProgressoService.php
+```service/ProgressoService.php
 <?php
 namespace service;
 
@@ -673,7 +721,7 @@ class ProgressoService extends ProgressoDAO{
 
 ```
 
-```service\UsuarioService.php
+```service/UsuarioService.php
 <?php
 namespace service;
 
@@ -694,64 +742,6 @@ class UsuarioService extends UsuarioDAO{
     }
 }
 ?>
-
-```
-
-```template\ITemplate.php
-<?php
-namespace template;
-interface ITemplate {
-    public function cabecalho();
-    public function rodape();
-
- 
-}
-?>
-```
-
-```template\UsuarioTemp.php
-<?php
-namespace template;
-
-class UsuarioTemp implements ITemplate {
-    public function cabecalho(){
-        echo "<div> usuario cabecalho</div>";
-    }
-    public function rodape(){
-        echo "<div> usuario rodape</div>";
-    }
-
-    
-}
-?>
-```
-
-```view\ClienteView.php
-<?php
-
-namespace view;
-
-use generic\View;
-use template\UsuarioTemp;
-
-class ClienteView extends View
-{
-    public function __construct()
-    {
-        parent::__construct(new UsuarioTemp());
-    }
-    public function listaClientes($dados)
-    {
-        
-        $this->conteudo("public/ListaCliente.php",$dados);
-    }
-
-    public function alterarClientes($dados)
-    {
-        
-        $this->conteudo("public/AlterarCliente.php",$dados);
-    }
-}
 
 ```
 
