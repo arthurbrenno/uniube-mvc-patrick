@@ -671,7 +671,7 @@
 
         // Função para obter um emoji fictício para cada usuário
         function getEmojiForUser(userId) {
-            const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚'];
+            const emojis = ['🐶', '🐱', '🦊', '🐰', '🦁', '🐼', '🐨', '🐸', '🐵', '🐯'];
             return emojis[userId % emojis.length];
         }
 
@@ -795,7 +795,7 @@
 
         // Função para obter um emoji fictício para cada usuário
         function getEmojiForUser(userId) {
-            const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚'];
+            const emojis = ['🐶', '🐱', '🦊', '🐰', '🦁', '🐼', '🐨', '🐸', '🐵', '🐯'];
             return emojis[userId % emojis.length];
         }
 
