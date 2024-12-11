@@ -12,14 +12,29 @@ class ProgressoDAO extends MysqlFactory implements IProgressoDAO{
     }
 
     public function registrarProgresso($usuario_id, $desafio_id, $progresso){
-        $sql = "UPDATE Progresso SET progresso = :progresso, data_registro = CURRENT_TIMESTAMP WHERE usuario_id = :usuario_id AND desafio_id = :desafio_id";
+        $sql = "INSERT INTO Progresso (usuario_id, desafio_id, progresso, data_registro) 
+        VALUES (:usuario_id, :desafio_id, :progresso, CURRENT_TIMESTAMP)";
+        $param = [
+            "usuario_id" => $usuario_id,
+            "desafio_id" => $desafio_id,
+            "progresso" => $progresso
+        ];
+        $this->banco->executar($sql, $param);
+        return ["message" => "Progresso inserido com sucesso"];
+    }
+
+    public function atualizarProgresso($usuario_id, $desafio_id, $progresso) {
+        $sql = "UPDATE Progresso 
+                SET progresso = :progresso, data_registro = CURRENT_TIMESTAMP 
+                WHERE usuario_id = :usuario_id AND desafio_id = :desafio_id";
         $param = [
             "progresso" => $progresso,
             "usuario_id" => $usuario_id,
             "desafio_id" => $desafio_id
         ];
         $this->banco->executar($sql, $param);
-        return ["message" => "Progresso registrado com sucesso"];
+        return ["message" => "Progresso atualizado com sucesso"];
     }
+    
 }
 ?>

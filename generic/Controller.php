@@ -59,6 +59,11 @@ class Controller{
                 "registrarProgresso",
                 ["POST"]
             ],
+            "progresso/atualizar" => [
+                "controller\ProgressosController",
+                "atualizarProgresso",
+                ["POST"]
+            ],
         ];
     }
 

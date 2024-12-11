@@ -55,7 +55,7 @@
     <main class="flex-1 ml-64 p-8 space-y-16 relative z-0">
         <header class="p-6 bg-white shadow-xl rounded-2xl flex flex-col items-center gap-2">
             <h1 class="text-4xl font-extrabold text-green-700 tracking-tight flex items-center gap-2">
-                Bem-vindo <span class="animate-bounce">💪</span>
+                Duneida Corporations <span class="animate-bounce">💪</span>
             </h1>
             <p class="text-gray-600 text-lg">Gerencie usuários, desafios e progresso de forma organizada</p>
         </header>

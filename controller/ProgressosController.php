@@ -22,5 +22,11 @@ class ProgressosController {
         $resultado = $this->progressoService->registrarProgresso($usuario_id, $desafio_id, $progresso);
         echo json_encode($resultado);
     }
+    
+    // POST /progresso/atualizar
+    public function atualizarProgresso($usuario_id, $desafio_id, $progresso){
+        $resultado = $this->progressoService->atualizarProgresso($usuario_id, $desafio_id, $progresso);
+        echo json_encode($resultado);
+    }
 }
 ?>
