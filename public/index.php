@@ -346,9 +346,17 @@
     <script>
         const BASE_URL = '/mvc20242';
 
+        // Variáveis para armazenar dados de usuários e desafios
+        let usuariosData = [];
+        let desafiosData = [];
+
         // Fetch functions
         async function doGet(url) {
             const res = await fetch(url);
+            if (!res.ok) {
+                console.error(`Erro ao buscar ${url}:`, res.statusText);
+                return [];
+            }
             return await res.json();
         }
 
@@ -362,19 +370,27 @@
             for (let [key, value] of formData) {
                 jsonData[key] = value;
             }
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(jsonData)
-            });
-            const data = await res.json();
-            setOutput(outputElementId, data);
-            // Refresh data after successful POST
-            await carregarListas();
-            await carregarDashboard();
-            await carregarSelects();
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jsonData)
+                });
+                if (!res.ok) {
+                    throw new Error(`Erro na requisição: ${res.statusText}`);
+                }
+                const data = await res.json();
+                setOutput(outputElementId, data);
+                // Refresh data after successful POST
+                await carregarListas();
+                await carregarDashboard();
+                await carregarSelects();
+            } catch (error) {
+                console.error(error);
+                setOutput(outputElementId, { error: error.message });
+            }
         }
 
         // Render functions
@@ -393,6 +409,7 @@
                 tbody.appendChild(tr);
             });
             document.getElementById('totalUsuarios').textContent = usuarios.length;
+            usuariosData = usuarios; // Atualizar a variável global
         }
 
         function renderDesafios(desafios) {
@@ -413,18 +430,24 @@
                 tbody.appendChild(tr);
             });
             document.getElementById('totalDesafios').textContent = desafios.length;
+            desafiosData = desafios; // Atualizar a variável global
         }
 
         function renderProgresso(progressoData) {
             const tbody = document.getElementById('tableBodyProgresso');
             tbody.innerHTML = '';
             progressoData.forEach(p => {
+                const usuario = usuariosData.find(u => u.id === p.usuario_id);
+                const desafio = desafiosData.find(d => d.id === p.desafio_id);
+                const usuarioNome = usuario ? usuario.nome : 'Desconhecido';
+                const desafioTitulo = desafio ? desafio.titulo : 'Desconhecido';
+
                 const tr = document.createElement('tr');
                 tr.classList.add('border-b', 'hover:bg-green-50');
                 tr.innerHTML = `
                     <td class="py-2 px-3">${p.id}</td>
-                    <td class="py-2 px-3">${p.usuario_nome} (#${p.usuario_id})</td>
-                    <td class="py-2 px-3">${p.desafio_titulo} (#${p.desafio_id})</td>
+                    <td class="py-2 px-3">${usuarioNome} (#${p.usuario_id})</td>
+                    <td class="py-2 px-3">${desafioTitulo} (#${p.desafio_id})</td>
                     <td class="py-2 px-3">${p.progresso}%</td>
                     <td class="py-2 px-3">${p.data_registro || ''}</td>
                 `;
@@ -438,7 +461,11 @@
 
         function renderTopUsuariosChart(usuarios) {
             const ctx = document.getElementById('topUsuariosChart').getContext('2d');
-            const top5 = usuarios.sort((a, b) => b.progresso - a.progresso).slice(0, 5);
+            // Supondo que cada usuário tem um progresso médio
+            const top5 = usuarios
+                .filter(u => u.progresso !== undefined && u.progresso !== null)
+                .sort((a, b) => b.progresso - a.progresso)
+                .slice(0, 5);
             const labels = top5.map(u => u.nome);
             const data = top5.map(u => u.progresso);
             if (topUsuariosChart) {
@@ -520,6 +547,8 @@
                 opt.textContent = `${u.nome} (#${u.id})`;
                 select.appendChild(opt);
             });
+            // Atualizar a variável global
+            usuariosData = usuarios;
         }
 
         async function carregarDesafiosEmSelect(selectId) {
@@ -532,6 +561,8 @@
                 opt.textContent = `${d.titulo} (#${d.id})`;
                 select.appendChild(opt);
             });
+            // Atualizar a variável global
+            desafiosData = desafios;
         }
 
         // Carregar dados de listagem e dashboard
@@ -551,18 +582,23 @@
 
         async function carregarDashboard() {
             const usuarios = await doGet(`${BASE_URL}/usuarios/listar`);
+            const desafios = await doGet(`${BASE_URL}/desafios/listar`);
             const progresso = await doGet(`${BASE_URL}/progresso/listar`);
+
+            // Calcular progresso médio
             const totalProgresso = progresso.reduce((acc, p) => acc + p.progresso, 0);
             const progressoMedio = progresso.length ? (totalProgresso / progresso.length).toFixed(2) : 0;
             document.getElementById('progressoMedio').textContent = `${progressoMedio}%`;
 
-            // Adicionar o campo 'progresso' aos usuários (necessário para o gráfico)
-            usuarios.forEach(u => {
-                const userProgresso = progresso.filter(p => p.usuario_id === u.id).reduce((acc, p) => acc + p.progresso, 0);
-                u.progresso = progresso.filter(p => p.usuario_id === u.id).length ? (userProgresso / progresso.filter(p => p.usuario_id === u.id).length).toFixed(2) : 0;
+            // Calcular progresso médio por usuário
+            const progressoPorUsuario = usuarios.map(u => {
+                const userProgresso = progresso.filter(p => p.usuario_id === u.id);
+                const total = userProgresso.reduce((acc, p) => acc + p.progresso, 0);
+                const media = userProgresso.length ? (total / userProgresso.length).toFixed(2) : 0;
+                return { ...u, progresso: parseFloat(media) };
             });
 
-            renderTopUsuariosChart(usuarios);
+            renderTopUsuariosChart(progressoPorUsuario);
             renderDistribuicaoProgressoChart(progresso);
         }
 
