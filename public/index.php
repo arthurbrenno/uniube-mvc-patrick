@@ -73,10 +73,20 @@
 
             <!-- Tabs Content -->
             <div class="tab-content" id="tab-listar-usuarios">
-                <button id="btnListarUsuarios" class="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-transform transform hover:scale-105">
-                    Listar Usuários
-                </button>
-                <pre id="resListarUsuarios" class="mt-4 bg-gray-100 p-4 rounded-lg text-sm overflow-auto max-h-60 border border-green-100"></pre>
+                <!-- Tabela de Usuários -->
+                <div class="overflow-auto max-h-60 border border-green-100 rounded-lg">
+                    <table class="min-w-full text-left border-collapse">
+                        <thead class="border-b bg-green-50">
+                            <tr>
+                                <th class="py-2 px-3 text-green-800 font-medium">ID</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Nome</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Email</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Criado em</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBodyUsuarios"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="tab-content" id="tab-criar-usuarios">
@@ -136,10 +146,23 @@
 
             <!-- Tabs Content -->
             <div class="tab-content" id="tab-listar-desafios">
-                <button id="btnListarDesafios" class="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-transform transform hover:scale-105">
-                    Listar Desafios
-                </button>
-                <pre id="resListarDesafios" class="mt-4 bg-gray-100 p-4 rounded-lg text-sm overflow-auto max-h-60 border border-green-100"></pre>
+                <!-- Tabela de Desafios -->
+                <div class="overflow-auto max-h-60 border border-green-100 rounded-lg">
+                    <table class="min-w-full text-left border-collapse">
+                        <thead class="border-b bg-green-50">
+                            <tr>
+                                <th class="py-2 px-3 text-green-800 font-medium">ID</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Título</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Descrição</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Data Início</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Data Fim</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Criado por</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Criado em</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBodyDesafios"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="tab-content" id="tab-criar-desafio">
@@ -228,10 +251,21 @@
 
             <!-- Tabs Content -->
             <div class="tab-content" id="tab-listar-progresso">
-                <button id="btnListarProgresso" class="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-transform transform hover:scale-105">
-                    Listar Progresso
-                </button>
-                <pre id="resListarProgresso" class="mt-4 bg-gray-100 p-4 rounded-lg text-sm overflow-auto max-h-60 border border-green-100"></pre>
+                <!-- Tabela de Progresso -->
+                <div class="overflow-auto max-h-60 border border-green-100 rounded-lg">
+                    <table class="min-w-full text-left border-collapse">
+                        <thead class="border-b bg-green-50">
+                            <tr>
+                                <th class="py-2 px-3 text-green-800 font-medium">ID</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Usuário ID</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Desafio ID</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Progresso</th>
+                                <th class="py-2 px-3 text-green-800 font-medium">Data Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBodyProgresso"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="tab-content" id="tab-registrar-progresso">
@@ -260,7 +294,7 @@
     </main>
 
     <script>
-        const BASE_URL = '/uniube-mvc-patrick';
+        const BASE_URL = '/mvc20242';
 
         // Fetch functions
         async function doGet(url) {
@@ -289,6 +323,59 @@
             setOutput(outputElementId, data);
         }
 
+        // Render functions
+        function renderUsuarios(usuarios) {
+            const tbody = document.getElementById('tableBodyUsuarios');
+            tbody.innerHTML = '';
+            usuarios.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.classList.add('border-b', 'hover:bg-green-50');
+                tr.innerHTML = `
+                    <td class="py-2 px-3">${u.id}</td>
+                    <td class="py-2 px-3">${u.nome}</td>
+                    <td class="py-2 px-3">${u.email}</td>
+                    <td class="py-2 px-3">${u.criado_em}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderDesafios(desafios) {
+            const tbody = document.getElementById('tableBodyDesafios');
+            tbody.innerHTML = '';
+            desafios.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.classList.add('border-b', 'hover:bg-green-50');
+                tr.innerHTML = `
+                    <td class="py-2 px-3">${d.id}</td>
+                    <td class="py-2 px-3">${d.titulo}</td>
+                    <td class="py-2 px-3">${d.descricao || ''}</td>
+                    <td class="py-2 px-3">${d.data_inicio}</td>
+                    <td class="py-2 px-3">${d.data_fim}</td>
+                    <td class="py-2 px-3">${d.criado_por || ''}</td>
+                    <td class="py-2 px-3">${d.criado_em || ''}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderProgresso(progressoData) {
+            const tbody = document.getElementById('tableBodyProgresso');
+            tbody.innerHTML = '';
+            progressoData.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.classList.add('border-b', 'hover:bg-green-50');
+                tr.innerHTML = `
+                    <td class="py-2 px-3">${p.id}</td>
+                    <td class="py-2 px-3">${p.usuario_id}</td>
+                    <td class="py-2 px-3">${p.desafio_id}</td>
+                    <td class="py-2 px-3">${p.progresso}</td>
+                    <td class="py-2 px-3">${p.data_registro || ''}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         async function carregarUsuariosEmSelect(selectId) {
             const usuarios = await doGet(`${BASE_URL}/usuarios/listar`);
             const select = document.getElementById(selectId);
@@ -313,6 +400,21 @@
             });
         }
 
+        // Carregar dados de listagem sem botões
+        async function carregarListas() {
+            // Carrega usuários
+            const usuarios = await doGet(`${BASE_URL}/usuarios/listar`);
+            renderUsuarios(usuarios);
+
+            // Carrega desafios
+            const desafios = await doGet(`${BASE_URL}/desafios/listar`);
+            renderDesafios(desafios);
+
+            // Carrega progresso
+            const progresso = await doGet(`${BASE_URL}/progresso/listar`);
+            renderProgresso(progresso);
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             await carregarUsuariosEmSelect('selectCriadoPor');
             await carregarUsuariosEmSelect('selectUsuarioParticipar');
@@ -321,6 +423,9 @@
             await carregarDesafiosEmSelect('selectDesafioProgressoDesafio');
             await carregarUsuariosEmSelect('selectUsuarioProgressoGeral');
             await carregarDesafiosEmSelect('selectDesafioProgressoGeral');
+
+            // Carrega as listagens automaticamente
+            await carregarListas();
 
             // Tab switching
             const tabButtons = document.querySelectorAll('.tab-button');
@@ -350,10 +455,6 @@
         });
 
         // Usuários
-        document.getElementById('btnListarUsuarios').addEventListener('click', async () => {
-            const data = await doGet(`${BASE_URL}/usuarios/listar`);
-            setOutput('resListarUsuarios', data);
-        });
         document.getElementById('formCriarUsuario').addEventListener('submit', (e) => {
             e.preventDefault();
             doPost(`${BASE_URL}/usuarios/criar`, e.target, 'resCriarUsuario');
@@ -364,10 +465,6 @@
         });
 
         // Desafios
-        document.getElementById('btnListarDesafios').addEventListener('click', async () => {
-            const data = await doGet(`${BASE_URL}/desafios/listar`);
-            setOutput('resListarDesafios', data);
-        });
         document.getElementById('formCriarDesafio').addEventListener('submit', (e) => {
             e.preventDefault();
             doPost(`${BASE_URL}/desafios/criar`, e.target, 'resCriarDesafio');
@@ -382,10 +479,6 @@
         });
 
         // Progresso
-        document.getElementById('btnListarProgresso').addEventListener('click', async () => {
-            const data = await doGet(`${BASE_URL}/progresso/listar`);
-            setOutput('resListarProgresso', data);
-        });
         document.getElementById('formRegistrarProgresso').addEventListener('submit', (e) => {
             e.preventDefault();
             doPost(`${BASE_URL}/progresso/registrar`, e.target, 'resRegistrarProgresso');
